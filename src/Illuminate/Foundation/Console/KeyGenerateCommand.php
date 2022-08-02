@@ -49,13 +49,13 @@ class KeyGenerateCommand extends Command
         $key = $this->generateRandomKey();
 
         if ($this->option('show')) {
-            return $this->line('<comment>'.$key.'</comment>');
+            return $this->line('<comment>' . $key . '</comment>');
         }
 
         // Next, we will replace the application key in the environment file so it is
         // automatically setup for this developer. This key gets generated using a
         // secure random byte generator and is later base64 encoded for storage.
-        if (! $this->setKeyInEnvironmentFile($key)) {
+        if (!$this->setKeyInEnvironmentFile($key)) {
             return;
         }
 
@@ -71,7 +71,7 @@ class KeyGenerateCommand extends Command
      */
     protected function generateRandomKey()
     {
-        return 'base64:'.base64_encode(
+        return 'base64:' . base64_encode(
             Encrypter::generateKey($this->laravel['config']['app.cipher'])
         );
     }
@@ -86,7 +86,7 @@ class KeyGenerateCommand extends Command
     {
         $currentKey = $this->laravel['config']['app.key'];
 
-        if (strlen($currentKey) !== 0 && (! $this->confirmToProceed())) {
+        if (strlen($currentKey) !== 0 && (!$this->confirmToProceed())) {
             return false;
         }
 
@@ -103,11 +103,15 @@ class KeyGenerateCommand extends Command
      */
     protected function writeNewEnvironmentFileWith($key)
     {
-        file_put_contents($this->laravel->environmentFilePath(), preg_replace(
-            $this->keyReplacementPattern(),
-            'APP_KEY='.$key,
-            file_get_contents($this->laravel->environmentFilePath())
-        ));
+        $env = file_get_contents($this->laravel->environmentFilePath());
+        preg_match($this->keyReplacementPattern(), $env, $match);
+
+        if ($match[0] ?? false) {
+            file_put_contents($this->laravel->environmentFilePath(), preg_replace($this->keyReplacementPattern(),"APP_KEY=$key", $env));
+            return;
+        }
+
+        file_put_contents($this->laravel->environmentFilePath(), "APP_KEY=$key" . "\n" . $env);
     }
 
     /**
